@@ -1,0 +1,169 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Jeremiah Jason | Experiments | Pixel Splash">
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-white"
+	>
+		<div id="tile-grid" class="grid"></div>
+	</div>
+</BaseLayout>
+
+<script>
+	const grid = document.getElementById("tile-grid");
+
+	const TILE_SIZE = 25;
+	const BLAST_RADIUS = 20;
+
+	const sleep = (ms: number) =>
+		new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+	// Standard midpoint circle algorithm, returning 1-based tile indices.
+	// Coordinates are clamped to the visible grid so edge clicks don't
+	// produce out-of-range lookups.
+	function circleOutline(
+		cx: number,
+		cy: number,
+		columns: number,
+		rows: number,
+		radius: number
+	): number[] {
+		let x = radius;
+		let y = 0;
+		let err = 1 - radius;
+		const output = new Set<number>();
+
+		while (x >= y) {
+			const offsets = [
+				[x, y],
+				[y, x],
+				[-y, x],
+				[-x, y],
+				[-x, -y],
+				[-y, -x],
+				[y, -x],
+				[x, -y],
+			];
+			for (const [dx, dy] of offsets) {
+				const px = cx + dx;
+				const py = cy + dy;
+				if (px < 1 || px > columns || py < 1 || py > rows) continue;
+				output.add(px + (py - 1) * columns);
+			}
+			y += 1;
+			if (err <= 0) {
+				err += 2 * y + 1;
+			} else {
+				x -= 1;
+				err += 2 * (y - x) + 1;
+			}
+		}
+
+		return [...output];
+	}
+
+	const prefersReducedMotion = window.matchMedia(
+		"(prefers-reduced-motion: reduce)"
+	).matches;
+
+	// Cached tile references keyed by 1-based index.
+	let tiles: HTMLElement[] = [];
+	let horizontalAmount = 0;
+	let verticalAmount = 0;
+
+	function renderTiles() {
+		if (!grid) return;
+
+		horizontalAmount = Math.ceil(window.innerWidth / TILE_SIZE);
+		verticalAmount = Math.ceil(window.innerHeight / TILE_SIZE);
+		const count = horizontalAmount * verticalAmount;
+
+		grid.innerHTML = "";
+		grid.style.gridTemplateColumns = `repeat(${horizontalAmount}, ${TILE_SIZE}px)`;
+		grid.style.gridTemplateRows = `repeat(${verticalAmount}, ${TILE_SIZE}px)`;
+
+		const fragment = document.createDocumentFragment();
+		tiles = [];
+		for (let i = 1; i <= count; i++) {
+			const tile = document.createElement("button");
+			tile.type = "button";
+			tile.className = "border border-black bg-white cursor-pointer";
+			tile.dataset.index = String(i);
+			// Kept out of tab order: 2000 focusable tiles would be
+			// unusable for keyboard navigation.
+			tile.tabIndex = -1;
+			tile.setAttribute("aria-label", `Tile ${i}`);
+			tiles.push(tile);
+			fragment.appendChild(tile);
+		}
+		grid.appendChild(fragment);
+	}
+
+	async function playBlast(cx: number, cy: number) {
+		const rings: HTMLElement[][] = [];
+		for (let radius = 1; radius <= BLAST_RADIUS; radius++) {
+			rings.push(
+				circleOutline(cx, cy, horizontalAmount, verticalAmount, radius)
+					.map((idx) => tiles[idx - 1])
+					.filter((t): t is HTMLElement => Boolean(t))
+			);
+		}
+
+		const flash = (ring: HTMLElement[], on: boolean) => {
+			for (const tile of ring) {
+				tile.classList.toggle("bg-purple-500", on);
+				tile.classList.toggle("bg-white", !on);
+			}
+		};
+
+		// Reduced motion: a single, immediate flash instead of a staggered ripple.
+		if (prefersReducedMotion) {
+			for (const ring of rings) flash(ring, true);
+			await sleep(200);
+			for (const ring of rings) flash(ring, false);
+			return;
+		}
+
+		rings.forEach((ring, i) => {
+			setTimeout(async () => {
+				flash(ring, true);
+				await sleep(75);
+				flash(ring, false);
+			}, 50 * i);
+		});
+	}
+
+	// Single delegated listener instead of one per tile.
+	grid?.addEventListener("click", (event) => {
+		const tile = (event.target as HTMLElement).closest(
+			"button[data-index]"
+		) as HTMLElement;
+		if (!tile || !grid.contains(tile)) return;
+
+		const index = Number(tile.dataset.index);
+		const x = ((index - 1) % horizontalAmount) + 1;
+		const y = Math.floor((index - 1) / horizontalAmount) + 1;
+
+		playBlast(x, y);
+	});
+
+	renderTiles();
+
+	// Debounced; only re-renders when the tile count actually changes,
+	// so in-progress blasts survive minor viewport adjustments.
+	let resizeTimer: number | undefined;
+	window.addEventListener("resize", () => {
+		window.clearTimeout(resizeTimer);
+		resizeTimer = window.setTimeout(() => {
+			const nextHorizontal = Math.ceil(window.innerWidth / TILE_SIZE);
+			const nextVertical = Math.ceil(window.innerHeight / TILE_SIZE);
+			if (
+				nextHorizontal !== horizontalAmount ||
+				nextVertical !== verticalAmount
+			) {
+				renderTiles();
+			}
+		}, 150);
+	});
+</script>
