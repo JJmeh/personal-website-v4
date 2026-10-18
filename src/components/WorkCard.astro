@@ -1,0 +1,84 @@
+---
+import { Image } from "astro:assets";
+import { getWorkShots } from "../data/work-images";
+import { formatWorkTag, type Work } from "../data/works";
+import WorkPoster from "./WorkPoster.astro";
+
+/**
+ * One work card, shared by the home page teaser and the `/works` grid.
+ *
+ * The whole card links to the case study at `/works/<slug>/`, never straight
+ * out to the client site: the detail page is where the live URL lives, so a
+ * visitor gets the context before being handed off. Works without a screenshot
+ * (private builds) fall back to a generated monogram poster, which keeps a
+ * missing photo from being a prerequisite to listing a project.
+ */
+interface Props {
+	work: Work;
+}
+
+const { work } = Astro.props;
+
+const href = `/works/${work.slug}/`;
+const hero = getWorkShots(work.slug).hero;
+---
+
+<a
+	{href}
+	class="group bg-light rounded-xl w-full h-110 p-4 sm:p-6 xl:p-10 flex flex-col justify-between overflow-hidden transition-transform duration-300 ease-in-out hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+>
+	<div class="h-2/3 w-full rounded-lg overflow-hidden relative bg-dark/5">
+		{
+			hero ? (
+				<>
+					<Image
+						src={hero}
+						alt={`${work.name} — ${work.type}`}
+						widths={[320, 480, 640]}
+						sizes="(min-width: 1024px) 280px, (min-width: 640px) 42vw, 86vw"
+						class="img-crop transition-transform duration-500 ease-in-out group-hover:scale-[1.03]"
+					/>
+					{work.url && (
+						<span class="absolute bottom-2 left-2 font-mono uppercase tracking-wider text-[9px] bg-dark/75 text-light px-2 py-1 rounded-full">
+							Live
+						</span>
+					)}
+				</>
+			) : (
+				<WorkPoster work={work} />
+			)
+		}
+	</div>
+
+	<div class="text-dark pb-4">
+		<div class="flex flex-col gap-0.5">
+			<p class="tracking-wider text-xs xl:text-sm text-dark/70 uppercase">
+				{work.type}
+			</p>
+			<h3
+				class="font-semibold text-lg sm:text-xl xl:text-2xl flex items-center gap-2"
+			>
+				{work.name}
+				<svg
+					class="w-4 h-4 shrink-0 opacity-0 -translate-x-1 transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:translate-x-0"
+					aria-hidden="true"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M5 12h14m-6-6 6 6-6 6"></path>
+				</svg>
+			</h3>
+		</div>
+
+		<p
+			class="font-mono uppercase mt-2 tracking-wider text-[10px] text-dark/70"
+		>
+			[ {formatWorkTag(work)} ]
+		</p>
+	</div>
+</a>

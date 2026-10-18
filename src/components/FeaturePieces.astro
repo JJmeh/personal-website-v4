@@ -1,0 +1,364 @@
+---
+/**
+ * The big accent panel: the fixed left column on desktop, and the mobile hero
+ * block on the home page (`index.astro`). It is on every page, so everything
+ * here is deliberately quiet — motion that reads from across the room without
+ * competing with the content column beside it.
+ *
+ * Layers, back to front:
+ *
+ * 1. `panel-wash`   static radial washes, so the accent is not one flat fill.
+ * 2. `panel-field`  the canvas current field (`src/scripts/flow-field.ts`).
+ * 3. `panel-glow`   warm radial glow that trails the pointer.
+ * 4. `panel-dial`   counter-rotating tick ring + type ring — the focal point.
+ * 5. `panel-vignette` / `panel-grain`  depth and film grain.
+ * 6. `panel-hud`    availability line and local time.
+ *
+ * The two rotating rings animate the `transform` of their own HTML box, never
+ * of an SVG `<text>`. A CSS transform on an SVG child is applied by Blink
+ * during SVG layout rather than by the compositor, which invalidates layout up
+ * the whole ancestor chain every frame — measured at 82 layouts / 164 paints
+ * for a single rotating `<textPath>` on the home page. See the note in
+ * `ScrollDownAnimation.astro` for the full measurement.
+ */
+import { person } from "../data/site";
+
+/**
+ * One pass of the label around the ring. The tracking below is tuned so the
+ * string closes the circle exactly (`textLength` is ignored on a `<textPath>`
+ * in Blink, so this is measured, not declared); the dial box is what rotates,
+ * so the airy tracking reads as a rotating ring of large type.
+ */
+const ringText = `${person.jobTitle} · ${person.location} · `.toUpperCase();
+---
+
+<div class="feature-panel" data-feature-panel>
+	<div class="panel-wash" aria-hidden="true"></div>
+
+	<canvas class="panel-field" data-feature-canvas aria-hidden="true"
+	></canvas>
+	<div class="panel-glow" data-feature-glow aria-hidden="true"></div>
+
+	<div class="panel-dial" aria-hidden="true">
+		<div class="dial-ticks"></div>
+
+		<svg
+			class="dial-type"
+			viewBox="0 0 100 100"
+			xmlns="http://www.w3.org/2000/svg"
+		>
+			<defs>
+				<path
+					id="panel-dial-path"
+					d="M50,50 m-42,0 a42,42 0 1,1 84,0 a42,42 0 1,1 -84,0"
+					fill="none"></path>
+			</defs>
+			<text>
+				<textPath href="#panel-dial-path" startOffset="0">{ringText}</textPath>
+			</text>
+		</svg>
+
+		<div class="dial-core"></div>
+		<span class="dial-pin"></span>
+	</div>
+
+	<div class="panel-vignette" aria-hidden="true"></div>
+	<div class="panel-grain" aria-hidden="true"></div>
+
+	<div class="panel-hud">
+		<p class="hud-line hud-status">
+			<span class="hud-dot" aria-hidden="true"></span>
+			<span>Available for work</span>
+		</p>
+		<p class="hud-line hud-place">
+			<span>Local time</span>
+			<time class="hud-clock" data-feature-clock hidden></time>
+		</p>
+	</div>
+</div>
+
+<script>
+	import { person } from "../data/site";
+	import { initFlowField } from "../scripts/flow-field";
+	import { startLocalClock } from "../scripts/local-clock";
+
+	/**
+	 * The component is rendered twice in the layout (one panel per breakpoint),
+	 * so initialise every instance rather than the first match. Instances whose
+	 * box is `display: none` measure to zero and never start their loop.
+	 */
+	for (const panel of document.querySelectorAll<HTMLElement>(
+		"[data-feature-panel]",
+	)) {
+		const canvas = panel.querySelector<HTMLCanvasElement>(
+			"[data-feature-canvas]",
+		);
+		if (!canvas) continue;
+
+		initFlowField({
+			host: panel,
+			canvas,
+			glow: panel.querySelector<HTMLElement>("[data-feature-glow]"),
+		});
+
+		const clock = panel.querySelector<HTMLElement>("[data-feature-clock]");
+		if (clock) startLocalClock(clock, person.timeZone);
+	}
+</script>
+
+<style>
+	.feature-panel {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+		border-radius: 0.75rem;
+		background-color: var(--color-accent);
+		/* `%` sizes inside the panel are relative to its own box, and the dial
+		   must stay square inside a tall column as well as a short hero block. */
+		container-type: size;
+	}
+
+	/* ---- base ---------------------------------------------------------- */
+
+	.panel-wash {
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(
+				110% 80% at 10% -12%,
+				rgb(58 92 152 / 0.42),
+				transparent 62%
+			),
+			radial-gradient(95% 75% at 94% 98%, rgb(6 14 30 / 0.72), transparent 72%);
+	}
+
+	.panel-field {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0;
+		transition: opacity 1100ms ease-out;
+	}
+
+	/* Set by the field script once the first frame is on the canvas. */
+	.panel-field[data-ready="true"] {
+		opacity: 1;
+	}
+
+	.panel-glow {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 46cqmin;
+		height: 46cqmin;
+		/* The individual `translate` property composes ahead of the JS-written
+		   `transform`, so centring costs nothing in the animation loop. */
+		translate: -50% -50%;
+		background: radial-gradient(
+			closest-side,
+			rgb(255 122 26 / 0.26),
+			transparent 68%
+		);
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	/* ---- dial ---------------------------------------------------------- */
+
+	.panel-dial {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 84cqmin;
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		color: var(--color-light);
+	}
+
+	/* Ticks sit in the outermost band only, so the middle stays for the field. */
+	.dial-ticks {
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		background: repeating-conic-gradient(
+			from 0deg,
+			rgb(232 235 239 / 0.5) 0deg 0.3deg,
+			transparent 0.3deg 5deg
+		);
+		-webkit-mask: radial-gradient(
+			closest-side,
+			transparent calc(100% - 11px),
+			#000 calc(100% - 11px) calc(100% - 3px),
+			transparent calc(100% - 3px)
+		);
+		mask: radial-gradient(
+			closest-side,
+			transparent calc(100% - 11px),
+			#000 calc(100% - 11px) calc(100% - 3px),
+			transparent calc(100% - 3px)
+		);
+		will-change: transform;
+		animation: dial-spin 140s linear infinite reverse;
+	}
+
+	.dial-type {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+		opacity: 0.26;
+		will-change: transform;
+		animation: dial-spin 90s linear infinite;
+	}
+
+	.dial-type text {
+		font-size: 5px;
+		font-weight: 700;
+		letter-spacing: 2.71px;
+	}
+
+	/* Inner hairline + centre pin give the circle a pivot, so the field flowing
+	   through it reads as intentional instead of as an empty middle. */
+	.dial-core {
+		position: absolute;
+		inset: 22%;
+		border-radius: 50%;
+		border: 1px solid rgb(232 235 239 / 0.1);
+	}
+
+	.dial-pin {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 7px;
+		height: 7px;
+		translate: -50% -50%;
+		border-radius: 50%;
+		background: var(--color-highlight);
+		box-shadow: 0 0 26px 6px rgb(255 122 26 / 0.45);
+	}
+
+	@keyframes dial-spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	/* ---- depth --------------------------------------------------------- */
+
+	.panel-vignette {
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(
+			130% 95% at 50% 30%,
+			transparent 36%,
+			rgb(3 8 20 / 0.62) 100%
+		);
+	}
+
+	/* Film grain: one tiny tiled SVG noise, no blend mode, so the compositor
+	   never has to re-blend a full-panel layer while the canvas animates. */
+	.panel-grain {
+		position: absolute;
+		inset: 0;
+		opacity: 0.06;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+		background-size: 160px 160px;
+	}
+
+	/* ---- HUD ----------------------------------------------------------- */
+
+	.panel-hud {
+		position: absolute;
+		inset: auto 0 0 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0 1.25rem 1.25rem;
+		font-family: var(--font-mono);
+		font-size: 10px;
+		line-height: 1.1;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: rgb(232 235 239 / 0.75);
+	}
+
+	.hud-line {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.hud-dot {
+		position: relative;
+		display: inline-block;
+		width: 6px;
+		height: 6px;
+		border-radius: 999px;
+		background: var(--color-highlight);
+	}
+
+	.hud-dot::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		background: inherit;
+		will-change: transform, opacity;
+		animation: hud-pulse 2.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+	}
+
+	@keyframes hud-pulse {
+		from {
+			transform: scale(1);
+			opacity: 0.7;
+		}
+		to {
+			transform: scale(3.2);
+			opacity: 0;
+		}
+	}
+
+	/* Digits only appear once the clock script has something to show — and
+	   without JS the whole line goes, so "LOCAL TIME" never sits there alone. */
+	.hud-place:has(.hud-clock[hidden]) {
+		display: none;
+	}
+
+	.hud-clock {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.hud-clock::before {
+		content: "/";
+		margin-right: 0.5rem;
+		opacity: 0.6;
+	}
+
+	@media (max-width: 767px) {
+		.panel-hud {
+			padding: 0 1rem 1rem;
+			font-size: 9px;
+			letter-spacing: 0.14em;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.dial-ticks,
+		.dial-type,
+		.hud-dot::after {
+			animation: none;
+			will-change: auto;
+		}
+
+		.panel-field {
+			transition: none;
+		}
+	}
+</style>

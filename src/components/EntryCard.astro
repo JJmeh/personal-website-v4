@@ -1,0 +1,68 @@
+---
+import { Image } from "astro:assets";
+import { type Entry, formatEntryDate, toDateTimeAttr } from "../data/entries";
+
+/**
+ * One entry card, shared by the `/entries` grid and the "latest entries" picker
+ * at the bottom of a single entry — the two used to carry duplicate markup.
+ *
+ * Covers are optional: without one the card falls back to a monogram tile, so a
+ * photo is never a prerequisite for publishing.
+ */
+interface Props {
+	entry: Entry;
+}
+
+const { entry } = Astro.props;
+const { title, cover, coverAlt, date, tags } = entry.data;
+---
+
+<a
+	href={`/entries/${entry.id}/`}
+	class="group bg-light rounded-xl w-full p-3 sm:p-4 flex flex-col gap-3 transition-transform duration-300 ease-in-out hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent h-full"
+>
+	<div class="w-full aspect-[4/3] rounded-lg overflow-hidden bg-dark/5">
+		{
+			cover ? (
+				<Image
+					src={cover}
+					alt={coverAlt ?? ""}
+					class="img-crop transition-transform duration-500 ease-in-out group-hover:scale-[1.04]"
+				/>
+			) : (
+				<div
+					class="w-full h-full flex items-center justify-center bg-accent text-light font-mono font-bold text-4xl tracking-tighter"
+					aria-hidden="true"
+				>
+					{/* {title.slice(0, 2).toUpperCase()} */}
+					{/* <span class="opacity-50">.</span> */}
+				</div>
+			)
+		}
+	</div>
+
+	<div class="flex flex-col gap-1.5 px-1 pb-1">
+		<h3
+			class="font-semibold text-dark text-base sm:text-lg leading-snug text-pretty line-clamp-2 group-hover:text-accent transition-colors duration-300 ease-in-out"
+		>
+			{title}
+		</h3>
+		<time
+			datetime={toDateTimeAttr(date)}
+			class="font-mono uppercase tracking-wider text-[10px] text-dark/70"
+		>
+			{formatEntryDate(date)}
+		</time>
+		{
+			tags.length > 0 && (
+				<ul class="flex flex-wrap gap-1">
+					{tags.map((tag) => (
+						<li class="font-mono uppercase tracking-wider text-[10px] px-2 pb-0.5 pt-1 rounded-full bg-dark/5 text-dark/70">
+							{tag}
+						</li>
+					))}
+				</ul>
+			)
+		}
+	</div>
+</a>

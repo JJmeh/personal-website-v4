@@ -1,0 +1,39 @@
+---
+/**
+ * The numbered, light-panel section used by `/works/<slug>/`.
+ *
+ * Every case study reads as 01 problem → 02 solution → 03 what shipped →
+ * 04 outcome, so the shell lives here instead of being copied four times. The
+ * index is passed as a string (`"01"`) rather than a number so it keeps its
+ * leading zero without arithmetic at every call site.
+ */
+interface Props {
+	/** Two-digit step, e.g. `"01"`. */
+	index: string;
+	title: string;
+	/** DOM id for the heading, which names the section. */
+	id: string;
+}
+
+const { index, title, id } = Astro.props;
+---
+
+<section
+	aria-labelledby={id}
+	class="w-full bg-light rounded-xl p-4 sm:p-6 xl:p-10 flex flex-col gap-5"
+>
+	<header class="flex items-baseline gap-3 pb-3 border-b border-dark/10">
+		<span
+			class="font-mono text-[10px] tracking-wider text-dark/45 pt-0.5"
+			aria-hidden="true">{index}</span
+		>
+		<h2
+			id={id}
+			class="font-bold text-dark uppercase tracking-wider text-lg sm:text-xl"
+		>
+			{title}
+		</h2>
+	</header>
+
+	<slot />
+</section>

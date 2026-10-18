@@ -1,0 +1,66 @@
+---
+/**
+ * Decorative card that fills the empty half-cell when a grid holds an odd
+ * number of items, so a lone card never sits next to bare background.
+ *
+ * Used by the `/works` and `/entries` grids (where the shared facet filter
+ * script toggles it) and the "latest entries" picker on a single entry, so there
+ * is one filler design instead of three copies of the same markup.
+ *
+ * Height is intentionally *not* baked in: a grid child with no explicit height
+ * stretches to its row, which is what keeps the filler level with real cards.
+ * Pass `class` when a specific minimum is needed.
+ */
+interface Props {
+	/** DOM id, used by the filter script to show/hide the filler. */
+	id?: string;
+	/** Layout utilities (height / minimum height) for the host grid. */
+	class?: string;
+	/** Server-rendered initial state; the filter script takes over on load. */
+	isHidden?: boolean;
+}
+
+const { id, class: className, isHidden = false } = Astro.props;
+---
+
+<div
+	id={id}
+	style={isHidden ? "display: none;" : undefined}
+	class:list={[
+		"bg-light rounded-xl w-full p-4 sm:p-6 xl:p-10 flex flex-col justify-between relative overflow-hidden",
+		className,
+	]}
+>
+	<!-- Decorative dotted grid -->
+	<svg
+		class="absolute inset-0 w-full h-full text-dark/10 pointer-events-none"
+		aria-hidden="true"
+	>
+		<defs>
+			<pattern
+				id="card-filler-dots"
+				width="16"
+				height="16"
+				patternUnits="userSpaceOnUse"
+			>
+				<circle cx="1.5" cy="1.5" r="1.5" fill="currentColor"></circle>
+			</pattern>
+		</defs>
+		<rect width="100%" height="100%" fill="url(#card-filler-dots)"></rect>
+	</svg>
+
+	<div class="h-full w-full flex items-center justify-center relative">
+		<!-- Spark graphic -->
+		<svg
+			viewBox="0 0 100 100"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="5"
+			stroke-linecap="round"
+			class="w-24 sm:w-28 xl:w-44 text-highlight animate-[spin_24s_linear_infinite] motion-reduce:animate-none"
+			aria-hidden="true"
+		>
+			<path d="M50 6v88M6 50h88M19 19l62 62M81 19L19 81"></path>
+		</svg>
+	</div>
+</div>

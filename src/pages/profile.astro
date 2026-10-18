@@ -1,0 +1,203 @@
+---
+import Breadcrumb from "../components/Breadcrumb.astro";
+import PageHero from "../components/PageHero.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+/**
+ * Content source: jeremiahjason.com (about + experience sections).
+ * Everything below is verbatim or a light copy-edit of that copy, so this page
+ * stays truthful until the profile is wired to a CMS / content collection.
+ */
+const profile = {
+	name: "Jeremiah Jason",
+	tagline: "Just a Programmer",
+	role: "Full-Stack Web Developer",
+	location: "Jakarta, Indonesia",
+	email: "jeremiah.kaliki@gmail.com",
+	status: "Full-time · Open to freelance",
+};
+
+const bio = [
+	"Born in 2002, lives in Jakarta, Indonesia. Graduated in 2024 from Bina Nusantara University with a Computer Science degree. I am currently working as a full stack developer in a software company, while also taking freelancing jobs on the side.",
+	"I like space related things like NASA and spaceships. I also love programming as it allows me to create anything I want and need anytime.",
+];
+
+const quote =
+	"I strive to always improve myself, until at some point my creations are as beautiful, resilient and functional as the ships that bring mankind to the moon.";
+
+const facts = [
+	{ label: "Based in", value: profile.location },
+	{ label: "Born", value: "2002" },
+	{ label: "Degree", value: "B.Sc. Computer Science" },
+	{ label: "Graduated", value: "2024 · Bina Nusantara University" },
+];
+
+const experiences = [
+	{
+		company: "Accurate Indonesia",
+		role: "Full Stack Developer",
+		period: "April 2025 — Today",
+		current: true,
+	},
+	{
+		company: "Freelance",
+		role: "Full Stack Developer",
+		period: "September 2024 — Today",
+		current: true,
+	},
+	{
+		company: "Global Loyalty Indonesia",
+		role: "Intern Backend Engineer",
+		period: "September 2023 — September 2024",
+		current: false,
+	},
+	{
+		company: "Geniora",
+		role: "Part-time Web Developer",
+		period: "September 2021 — September 2023",
+		current: false,
+	},
+];
+---
+
+<BaseLayout
+	title="Profile | Jeremiah Jason"
+	description="Jeremiah Jason — Full-Stack Web Developer based in Jakarta, Indonesia."
+>
+	<PageHero title="PROFILE" />
+
+	<!-- ABOUT -->
+	<section class="w-full p-1.5 pb-0">
+		<div
+			class="w-full bg-light rounded-xl p-4 sm:p-6 xl:p-10 grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-10"
+		>
+			<div class="lg:col-span-3 flex flex-col reveal">
+				<h2
+					class="font-bold text-dark text-2xl sm:text-3xl tracking-wider uppercase mt-4 sm:mt-0"
+				>
+					About Me
+				</h2>
+				<div
+					class="w-full flex flex-col gap-4 mt-4 text-dark font-medium text-base sm:text-lg text-pretty"
+				>
+					{bio.map((paragraph) => <p>{paragraph}</p>)}
+				</div>
+
+				<blockquote
+					class="relative mt-6 pl-5 border-l-2 border-highlight text-dark/80 italic text-base sm:text-lg"
+				>
+					“{quote}”
+				</blockquote>
+			</div>
+
+			<div class="lg:col-span-2 flex flex-col gap-1.5 reveal">
+				{
+					facts.map((fact) => (
+						<div class="w-full bg-dark/5 rounded-lg px-4 py-3 flex flex-col gap-0.5">
+							<span class="font-mono uppercase tracking-widest text-[10px] text-dark/70">
+								{fact.label}
+							</span>
+							<span class="text-dark font-semibold text-base">
+								{fact.value}
+							</span>
+						</div>
+					))
+				}
+			</div>
+		</div>
+	</section>
+
+	<!-- EXPERIENCES -->
+	<section class="w-full p-1.5 pb-0">
+		<div
+			class="w-full bg-light rounded-xl p-4 sm:p-6 xl:p-10 flex flex-col gap-6"
+		>
+			<div
+				class="flex flex-row items-baseline justify-between gap-3 reveal mt-4 sm:mt-0"
+			>
+				<h2
+					class="font-bold text-dark text-2xl sm:text-3xl tracking-wider uppercase"
+				>
+					Experiences
+				</h2>
+				<!-- <span
+					class="font-mono uppercase tracking-widest text-[10px] text-dark/70 pt-1"
+					>{experiences.length} entries</span
+				> -->
+			</div>
+
+			<ol class="flex flex-col">
+				{
+					experiences.map((job, index) => (
+						<li class="flex gap-4 sm:gap-5 reveal">
+							<div class="flex flex-col items-center shrink-0 pt-2">
+								<span
+									class={`h-2.5 w-2.5 rounded-full shrink-0 ${
+										job.current ? "bg-highlight" : "bg-accent"
+									}`}
+								/>
+								{index < experiences.length - 1 && (
+									<span class="w-px grow bg-dark/10 mt-1" />
+								)}
+							</div>
+
+							<div class="pb-7 group w-full">
+								<div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-4">
+									<div class="flex flex-col gap-0.5">
+										<h3 class="text-dark font-semibold text-lg sm:text-xl transition-transform duration-300 ease-in-out group-hover:translate-x-1">
+											{job.company}
+										</h3>
+										<p class="text-accent font-medium text-base sm:text-lg">
+											{job.role}
+										</p>
+									</div>
+									<p class="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-dark/60 sm:pt-1 sm:text-right shrink-0">
+										{job.period}
+									</p>
+								</div>
+								{job.current && (
+									<span class="inline-block mt-2 font-mono uppercase tracking-widest text-[10px] px-2.5 pb-1 pt-1.5 rounded-full bg-highlight/15 text-highlight-ink">
+										current
+									</span>
+								)}
+							</div>
+						</li>
+					))
+				}
+			</ol>
+		</div>
+	</section>
+
+	<Breadcrumb current="PROFILE" />
+</BaseLayout>
+
+<script>
+	import { gsap } from "gsap";
+	import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+	gsap.registerPlugin(ScrollTrigger);
+
+	/**
+	 * Progressive enhancement: markup is fully visible without JS, so the reveal
+	 * only hides elements once GSAP is confirmed to be running.
+	 */
+	const mm = gsap.matchMedia();
+
+	mm.add("(prefers-reduced-motion: no-preference)", () => {
+		const items = gsap.utils.toArray<HTMLElement>(".reveal");
+
+		for (const item of items) {
+			gsap.from(item, {
+				autoAlpha: 0,
+				y: 24,
+				duration: 0.6,
+				ease: "power2.out",
+				scrollTrigger: {
+					trigger: item,
+					start: "top bottom-=10%",
+					once: true,
+				},
+			});
+		}
+	});
+</script>

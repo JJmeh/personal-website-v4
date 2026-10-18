@@ -1,0 +1,121 @@
+---
+import { Image } from "astro:assets";
+import { render } from "astro:content";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import CardFiller from "../../components/CardFiller.astro";
+import EntryCard from "../../components/EntryCard.astro";
+import {
+	formatEntryDate,
+	getLatestEntries,
+	getPublishedEntries,
+	toDateTimeAttr,
+} from "../../data/entries";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+/** One page per file in `src/content/entries/`. */
+export const getStaticPaths = async () => {
+	const entries = await getPublishedEntries();
+
+	return entries.map((entry) => ({
+		params: { id: entry.id },
+		props: { entry },
+	}));
+};
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+/** Three alternatives to hop to next, never including this entry. */
+const latestEntries = await getLatestEntries({ excludeId: entry.id, limit: 2 });
+/** The grid runs two-up from `lg`; an odd last cell gets a decorative filler. */
+const hasOddCells = latestEntries.length % 2 !== 0;
+---
+
+<BaseLayout
+	title={`${entry.data.title} | Jeremiah Jason`}
+	description={entry.data.description}
+>
+	<article class="w-full p-1.5 pb-0 flex flex-col gap-1.5">
+		<header class="w-full bg-light rounded-xl p-4 sm:p-6 xl:p-10">
+			<h1
+				class="font-bold text-dark text-3xl sm:text-4xl xl:text-5xl tracking-tight text-balance mt-2 md:mt-10"
+			>
+				{entry.data.title}
+			</h1>
+
+			<time
+				datetime={toDateTimeAttr(entry.data.date)}
+				class="block font-mono uppercase tracking-wider text-[10px] text-dark/70 mt-3"
+			>
+				{formatEntryDate(entry.data.date)}
+			</time>
+
+			{
+				entry.data.tags.length > 0 && (
+					<ul class="flex flex-wrap gap-1.5 mt-3">
+						{entry.data.tags.map((tag) => (
+							<li class="font-mono uppercase tracking-wider text-[10px] px-2.5 pb-1 pt-1.5 rounded-full bg-dark/5 text-dark/70">
+								{tag}
+							</li>
+						))}
+					</ul>
+				)
+			}
+
+			{
+				entry.data.cover && (
+					<div class="w-full aspect-video rounded-lg overflow-hidden mt-6 bg-dark/5">
+						<Image
+							src={entry.data.cover}
+							alt={entry.data.coverAlt ?? ""}
+							class="img-crop"
+						/>
+					</div>
+				)
+			}
+		</header>
+
+		<div class="w-full bg-light rounded-xl p-4 sm:p-6 xl:p-10">
+			<div class="entry-body">
+				<Content />
+			</div>
+		</div>
+
+		{
+			latestEntries.length > 0 && (
+				<section
+					aria-labelledby="latest-entries-title"
+					class="w-full flex flex-col gap-1.5"
+				>
+					<div class="w-full h-max bg-light rounded-xl py-4 px-4 sm:px-6 sm:py-4 xl:px-10 xl:py-6 flex items-center justify-between gap-3">
+						<h2
+							id="latest-entries-title"
+							class="font-bold text-dark text-lg sm:text-xl uppercase pt-1.5 tracking-wider"
+						>
+							Latest Entries
+						</h2>
+						<a
+							href="/entries"
+							class="font-mono uppercase tracking-wider text-[10px] text-dark/70 hover:text-accent transition-colors duration-300 ease-in-out pt-1.5 shrink-0"
+						>
+							All entries →
+						</a>
+					</div>
+
+					<div class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-1.5">
+						{latestEntries.map((latest) => (
+							<EntryCard entry={latest} />
+						))}
+
+						{hasOddCells && <CardFiller class="min-h-60" />}
+					</div>
+				</section>
+			)
+		}
+	</article>
+
+	<Breadcrumb
+		current={entry.data.title}
+		trail={[{ href: "/entries", label: "ENTRIES" }]}
+	/>
+</BaseLayout>

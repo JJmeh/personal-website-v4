@@ -1,0 +1,288 @@
+---
+import { Image } from "astro:assets";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import Button from "../../components/Button.astro";
+import CardFiller from "../../components/CardFiller.astro";
+import WorkCard from "../../components/WorkCard.astro";
+import WorkCaseSection from "../../components/WorkCaseSection.astro";
+import WorkPoster from "../../components/WorkPoster.astro";
+import { workCases } from "../../data/work-cases";
+import { getWorkShots } from "../../data/work-images";
+import { getRelatedWorks, works } from "../../data/works";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+/**
+ * One case study per work in `src/data/works.ts`.
+ *
+ * The narrative comes from `work-cases.ts` and the screenshots from
+ * `work-images.ts`; this file only decides how they are laid out. A work with
+ * no screenshot renders the shared poster tile instead, so a private build
+ * still gets a complete page.
+ */
+export const getStaticPaths = () =>
+	works.map((work) => ({ params: { slug: work.slug }, props: { work } }));
+
+const { work } = Astro.props;
+const study = workCases[work.slug];
+const { hero, gallery } = getWorkShots(work.slug);
+const related = getRelatedWorks(work.slug, 2);
+
+/** Every discipline the work is filed under, rendered as pills. */
+const facets = [work.kind, ...work.stack];
+
+const glance = [
+	{ label: "Client", value: work.name },
+	{ label: "Role", value: study.role },
+	{ label: "Collaboration", value: study.collaboration },
+	{ label: "Status", value: work.url ? "Live" : "Private build" },
+];
+
+const hasOddRelated = related.length % 2 !== 0;
+---
+
+<BaseLayout
+	title={`${work.name} — ${work.type} | Jeremiah Jason`}
+	description={study.summary}
+>
+	<article class="w-full p-1.5 pb-0 flex flex-col gap-1.5">
+		<!-- HERO -->
+		<header class="w-full bg-light rounded-xl p-4 sm:p-6 xl:p-10">
+			<p
+				class="font-mono uppercase tracking-wider text-[10px] text-dark/70 mt-2 md:mt-10"
+			>
+				[ WORKS · {work.kind.toUpperCase()} ]
+			</p>
+
+			<h1
+				class="font-bold text-dark text-3xl sm:text-4xl xl:text-5xl tracking-tight text-balance mt-2"
+			>
+				{work.name}
+			</h1>
+
+			<p class="text-dark/80 text-base sm:text-lg leading-relaxed text-pretty mt-3 max-w-[60ch]">
+				{study.summary}
+			</p>
+
+			<ul class="flex flex-wrap gap-1.5 mt-4">
+				{
+					facets.map((facet) => (
+						<li class="font-mono uppercase tracking-wider text-[10px] px-2.5 pb-1 pt-1.5 rounded-full bg-dark/5 text-dark/70">
+							{facet}
+						</li>
+					))
+				}
+			</ul>
+
+			<div
+				class="w-full rounded-lg overflow-hidden mt-6 bg-dark/5 group"
+				style={hero ? `aspect-ratio: ${hero.width} / ${hero.height}` : "aspect-ratio: 16 / 10"}
+			>
+				{
+					hero ? (
+						<Image
+							src={hero}
+							alt={`${work.name} — ${work.type}`}
+							widths={[640, 960, 1280]}
+							sizes="(min-width: 768px) 46vw, 94vw"
+							loading="eager"
+							class="img-crop"
+						/>
+					) : (
+						<WorkPoster work={work} />
+					)
+				}
+			</div>
+
+			{
+				work.url ? (
+					<div class="flex flex-wrap items-center gap-3 mt-5">
+						<Button href={work.url} target="_blank">
+							VISIT LIVE SITE ↗
+						</Button>
+						<p class="font-mono uppercase tracking-wider text-[10px] text-dark/60 pt-1">
+							{new URL(work.url).host}
+						</p>
+					</div>
+				) : (
+					<p class="font-mono uppercase tracking-wider text-[10px] text-dark/60 mt-5">
+						Private build — no public URL to link.
+					</p>
+				)
+			}
+		</header>
+
+		<!-- AT A GLANCE -->
+		<section
+			aria-label="At a glance"
+			class="w-full bg-light rounded-xl p-4 sm:p-6 xl:p-10"
+		>
+			<dl
+				class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 [&>div]:min-w-0"
+			>
+				{
+					glance.map((fact) => (
+						<div class="flex flex-col gap-1">
+							<dt class="font-mono uppercase tracking-wider text-[10px] text-dark/50">
+								{fact.label}
+							</dt>
+							<dd class="font-semibold text-dark text-sm sm:text-base text-pretty">
+								{fact.value}
+							</dd>
+						</div>
+					))
+				}
+			</dl>
+		</section>
+
+		<!-- 01 PROBLEM -->
+		<WorkCaseSection index="01" id="problem-title" title="The problem">
+			<div class="flex flex-col gap-4 max-w-[68ch]">
+				{
+					study.problem.map((paragraph) => (
+						<p class="text-dark/85 text-base leading-relaxed text-pretty">
+							{paragraph}
+						</p>
+					))
+				}
+			</div>
+		</WorkCaseSection>
+
+		<!-- 02 SOLUTION -->
+		<WorkCaseSection index="02" id="solution-title" title="What I built">
+			<div class="flex flex-col gap-4 max-w-[68ch]">
+				{
+					study.solution.map((paragraph) => (
+						<p class="text-dark/85 text-base leading-relaxed text-pretty">
+							{paragraph}
+						</p>
+					))
+				}
+			</div>
+		</WorkCaseSection>
+
+		<!-- 03 SCOPE -->
+		<WorkCaseSection index="03" id="scope-title" title="What shipped">
+			<ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+				{
+					study.scope.map((item, index) => (
+						<li class="bg-dark/4 rounded-lg p-4 flex flex-col gap-1.5">
+							<span
+								class="font-mono text-[10px] tracking-wider text-dark/40"
+								aria-hidden="true"
+							>
+								{String(index + 1).padStart(2, "0")}
+							</span>
+							<h3 class="font-semibold text-dark text-sm sm:text-base leading-snug">
+								{item.title}
+							</h3>
+							<p class="text-dark/70 text-sm leading-relaxed text-pretty">
+								{item.body}
+							</p>
+						</li>
+					))
+				}
+			</ul>
+		</WorkCaseSection>
+
+		<!-- 04 OUTCOME -->
+		<WorkCaseSection index="04" id="outcome-title" title="Outcome">
+			<ul class="flex flex-col gap-3 max-w-[68ch]">
+				{
+					study.outcomes.map((outcome) => (
+						<li class="flex items-start gap-3 text-dark/85 text-base leading-relaxed text-pretty">
+							<svg
+								class="w-4 h-4 shrink-0 mt-1.5 text-accent"
+								aria-hidden="true"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								stroke-width="2.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<path d="m5 13 4 4L19 7" />
+							</svg>
+							<span>{outcome}</span>
+						</li>
+					))
+				}
+			</ul>
+
+		</WorkCaseSection>
+
+		<!-- SCREENS -->
+		{
+			gallery.length > 0 && (
+				<section
+					aria-labelledby="screens-title"
+					class="w-full bg-light rounded-xl p-4 sm:p-6 xl:p-10 flex flex-col gap-5"
+				>
+					<header class="flex items-baseline justify-between gap-3 pb-3 border-b border-dark/10">
+						<h2
+							id="screens-title"
+							class="font-bold text-dark uppercase tracking-wider text-lg sm:text-xl"
+						>
+							Screens
+						</h2>
+						<span class="font-mono uppercase tracking-wider text-[10px] text-dark/50 pt-1">
+							{gallery.length} views
+						</span>
+					</header>
+
+					<div class="flex flex-col gap-5">
+						{gallery.map((shot, index) => (
+							<figure class="flex flex-col gap-2">
+								<div
+									class="w-full rounded-lg overflow-hidden bg-dark/5"
+									style={`aspect-ratio: ${shot.src.width} / ${shot.src.height}`}
+								>
+									<Image
+										src={shot.src}
+										alt={`${work.name} — ${shot.label.toLowerCase()}`}
+										widths={[640, 960, 1280]}
+										sizes="(min-width: 768px) 46vw, 94vw"
+										loading="lazy"
+										class="img-crop"
+									/>
+								</div>
+								<figcaption class="font-mono uppercase tracking-wider text-[10px] text-dark/50">
+									Fig. {String(index + 1).padStart(2, "0")} — {shot.label}
+								</figcaption>
+							</figure>
+						))}
+					</div>
+				</section>
+			)
+		}
+
+		<!-- MORE WORKS -->
+		<section aria-labelledby="more-works-title" class="w-full flex flex-col gap-1.5">
+			<div
+				class="w-full h-max bg-light rounded-xl py-4 px-4 sm:px-6 sm:py-4 xl:px-10 xl:py-6 flex items-center justify-between gap-3"
+			>
+				<h2
+					id="more-works-title"
+					class="font-bold text-dark text-lg sm:text-xl uppercase pt-1.5 tracking-wider"
+				>
+					More Works
+				</h2>
+				<a
+					href="/works"
+					class="font-mono uppercase tracking-wider text-[10px] text-dark/70 hover:text-accent transition-colors duration-300 ease-in-out pt-1.5 shrink-0"
+				>
+					All works →
+				</a>
+			</div>
+
+			<div
+				class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-1.5"
+			>
+				{related.map((item) => <WorkCard work={item} />)}
+				{hasOddRelated && <CardFiller class="h-110" />}
+			</div>
+		</section>
+	</article>
+
+	<Breadcrumb current={work.name} trail={[{ href: "/works", label: "WORKS" }]} />
+</BaseLayout>

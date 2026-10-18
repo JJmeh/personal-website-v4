@@ -1,0 +1,95 @@
+---
+/**
+ * Decorative scroll cue: rotating "SCROLL DOWN" ring with a centre arrow.
+ * Colours come from `currentColor`, so it inherits whatever text token the
+ * parent sets instead of hardcoding the dark hex.
+ *
+ * The ring and the arrow are two separate `<svg>` boxes on purpose.
+ *
+ * The obvious build — one SVG whose `<text>`/`<textPath>` carries the rotation —
+ * costs a document-wide layout on *every* animation frame. An SVG `transform`
+ * is applied by Blink during SVG layout, not by the compositor, so the animated
+ * text invalidates layout up the whole ancestor chain, and on this page that
+ * chain ends at the document: the browser is then re-laying-out a 3 000 px
+ * page 60 times a second while the reader scrolls. Measured with CDP
+ * `Performance.getMetrics`: 24 layouts during a five-step scroll on the home
+ * page versus 0 on `/works` and `/profile`; `display: none` on this component
+ * drops it back to 0, which is what identified it.
+ *
+ * Rotating the `<svg>` element itself is a transform on an HTML box, so it is
+ * composited (`will-change: transform`) and never touches layout. The arrow is
+ * a sibling, so it stays upright.
+ */
+---
+
+<div class="circle-container text-dark" aria-hidden="true">
+	<svg class="cue-ring" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+		<defs>
+			<path
+				id="circlePath"
+				d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0"
+				fill="transparent"
+			></path>
+		</defs>
+
+		<text>
+			<textPath href="#circlePath"> • SCROLL DOWN • SCROLL DOWN </textPath>
+		</text>
+	</svg>
+
+	<svg class="cue-arrow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+		<polygon points="42,45 58,45 50,57"></polygon>
+	</svg>
+</div>
+
+<style>
+	.circle-container {
+		width: 80px;
+		height: 80px;
+		position: relative;
+	}
+
+	/* Both layers fill the same box; only the ring spins. */
+	.cue-ring,
+	.cue-arrow {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	.cue-ring {
+		transform-origin: 50% 50%;
+		/* Own compositor layer: rotating it never re-runs layout or repaint. */
+		will-change: transform;
+		animation: rotateRing 20s linear infinite;
+	}
+
+	text {
+		font-size: 10px;
+		font-weight: bold;
+		letter-spacing: 2px;
+		fill: currentColor;
+	}
+
+	/* Centre arrow */
+	.cue-arrow {
+		fill: currentColor;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.cue-ring {
+			animation: none;
+			will-change: auto;
+		}
+	}
+
+	@keyframes rotateRing {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+</style>

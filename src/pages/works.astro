@@ -1,0 +1,130 @@
+---
+import Breadcrumb from "../components/Breadcrumb.astro";
+import CardFiller from "../components/CardFiller.astro";
+import PageHero from "../components/PageHero.astro";
+import WorkCard from "../components/WorkCard.astro";
+import { toFacetAttr } from "../data/facets";
+import { getWorkFacets, getWorkFilters, works } from "../data/works";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+/**
+ * Every facet that exists in the catalogue becomes a filter pill, so adding a
+ * stack value to `src/data/works.ts` is enough to add a new button here.
+ */
+const filters = getWorkFilters(works);
+const facetsBySlug = new Map(
+	works.map((work) => [work.slug, toFacetAttr(getWorkFacets(work))] as const)
+);
+---
+
+<BaseLayout
+	title="Works | Jeremiah Jason"
+	description="Selected work by Jeremiah Jason — landing pages, catalogues and web apps for companies in Jakarta and beyond."
+>
+	<PageHero title="WORKS" subtitle={`${works.length} projects`} />
+
+	<section class="w-full p-1.5 pb-0 flex flex-col">
+		<button
+			type="button"
+			id="categories-toggle"
+			aria-expanded="false"
+			aria-controls="categories-panel"
+			class="w-full h-max bg-light rounded-xl py-4 px-4 sm:px-6 sm:py-4 xl:px-10 xl:py-6 flex items-center justify-between group cursor-pointer"
+		>
+			<h2
+				class="font-bold text-dark text-lg sm:text-xl uppercase pt-1.5 tracking-wider group-hover:scale-90 transition-transform duration-300 ease-in-out"
+			>
+				Categories
+			</h2>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="24"
+				height="24"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				id="categories-chevron"
+				aria-hidden="true"
+				class="lucide lucide-chevron-down preview-icon text-dark transition-transform duration-300 ease-in-out rotate-0"
+				><path d="m6 9 6 6 6-6"></path></svg
+			>
+		</button>
+
+		<div
+			id="categories-panel"
+			class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-500 ease-in-out"
+			aria-hidden="true"
+			inert
+		>
+			<div class="overflow-hidden min-h-0">
+				<div
+					class="w-full bg-accent rounded-xl p-4 xl:p-6 flex flex-wrap gap-2"
+					role="group"
+					aria-label="Filter works by category"
+				>
+					{
+						filters.map((filter) => (
+							<button
+								type="button"
+								data-filter={filter}
+								aria-pressed="false"
+								class="category-filter font-bold uppercase tracking-wider text-xs xl:text-sm px-3.5 pb-1.5 pt-2.5 rounded-full transition-colors duration-300 ease-in-out cursor-pointer bg-light/10 text-light hover:bg-light/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
+							>
+								{filter}
+							</button>
+						))
+					}
+				</div>
+			</div>
+		</div>
+
+		<p
+			id="works-empty"
+			class="hidden w-full bg-light rounded-xl p-8 mt-1.5 text-center text-dark/60 font-medium"
+			role="status"
+		>
+			No projects in this category yet.
+		</p>
+
+		<div
+			id="works-grid"
+			class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-1.5 mt-1.5"
+		>
+			{
+				works.map((work) => (
+					<div
+						class="work-item w-full"
+						data-facets={facetsBySlug.get(work.slug)}
+					>
+						<WorkCard work={work} />
+					</div>
+				))
+			}
+			<CardFiller
+				id="work-filler"
+				class="h-110"
+				isHidden={works.length % 2 === 0}
+			/>
+		</div>
+	</section>
+
+	<Breadcrumb current="WORKS" />
+</BaseLayout>
+
+<script>
+	import { initFacetFilter } from "../scripts/facet-filter";
+
+	initFacetFilter({
+		toggle: "#categories-toggle",
+		panel: "#categories-panel",
+		chevron: "#categories-chevron",
+		grid: "#works-grid",
+		empty: "#works-empty",
+		item: ".work-item",
+		pill: ".category-filter",
+		filler: "#work-filler",
+	});
+</script>

@@ -1,0 +1,98 @@
+---
+/**
+ * The breadcrumb strip that closes every page.
+ *
+ * Always starts at HOME and ends at the current page; `trail` adds the crumbs
+ * in between (e.g. `/entries/<id>` passes ENTRIES). Labels are rendered as-is,
+ * so pass them already in the case the design wants.
+ */
+interface Crumb {
+	label: string;
+	href: string;
+}
+
+interface Props {
+	/** Label of the current page, e.g. "WORKS". Rendered as the last crumb. */
+	current: string;
+	/** Intermediate crumbs between HOME and `current`, in reading order. */
+	trail?: Crumb[];
+}
+
+const { current, trail = [] } = Astro.props;
+
+/** One shape for every crumb: the first is the home icon (`href`, no label),
+ * the last has a label and no link (it is the current page). */
+type RenderCrumb = { href?: string; label?: string };
+
+const crumbs: RenderCrumb[] = [{ href: "/" }, ...trail, { label: current }];
+---
+
+<section class="w-full p-1.5 flex flex-col">
+	<nav
+		aria-label="Breadcrumb"
+		class="w-full h-max min-w-0 bg-light rounded-xl py-4 px-4 sm:px-6 sm:py-4 xl:px-10 xl:py-6 flex items-center gap-2"
+	>
+		{
+			crumbs.map((crumb, index) => (
+				<>
+					{index > 0 && (
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+							class="lucide lucide-chevron-right preview-icon shrink-0"
+						>
+							<path d="m9 18 6-6-6-6" />
+						</svg>
+					)}
+
+					{index === 0 && (
+						<a href="/" aria-label="Home" class="shrink-0">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+								class="lucide lucide-house preview-icon"
+							>
+								<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+								<path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+							</svg>
+						</a>
+					)}
+
+					{index > 0 && crumb.href && (
+						<a
+							href={crumb.href}
+							class="pt-1 font-bold text-sm text-dark/70 hover:text-dark hover:underline shrink-0"
+						>
+							{crumb.label}
+						</a>
+					)}
+
+					{index > 0 && !crumb.href && (
+						<span
+							class="pt-1 font-bold text-sm text-dark truncate min-w-0"
+							aria-current="page"
+						>
+							{crumb.label}
+						</span>
+					)}
+				</>
+			))
+		}
+	</nav>
+</section>

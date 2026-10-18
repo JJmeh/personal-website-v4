@@ -1,20 +1,28 @@
 ---
-import SplashScreen from "../components/SplashScreen.astro";
 import "../styles/global.css";
-import NavBarLink from "../components/NavBarLink.astro";
 import { Font } from "astro:assets";
-import SocialNavLinks from "../components/SocialNavLinks.astro";
+import FeaturePieces from "../components/FeaturePieces.astro";
+import HeaderNavBarLink from "../components/HeaderNavBarLink.astro";
+import { personJsonLd, socials } from "../data/site";
 
 interface Props {
 	title: string;
 	description?: string;
+	/** Absolute or root-relative social preview image. */
+	image?: string;
 }
 
-const { title, description = "JeremiahJason - Just a guy enjoying life" } =
-	Astro.props;
+const {
+	title,
+	description = "JeremiahJason - Just a guy enjoying life",
+	image = "/og.png",
+} = Astro.props;
+
+/** Absolute URL for canonical/OG tags; falls back to a path when `site` is unset. */
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
 
-<html lang="en" class="font-sans bg-light">
+<html lang="en" class="font-sans bg-accent">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -22,14 +30,43 @@ const { title, description = "JeremiahJason - Just a guy enjoying life" } =
 
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
+		<meta name="theme-color" content="#1c3563" />
+
+		<link rel="canonical" href={canonicalURL} />
 
 		<meta name="description" content={description} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalURL} />
+		<meta property="og:site_name" content="Jeremiah Jason" />
+		<meta property="og:image" content={new URL(image, canonicalURL)} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content={title} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image" content={new URL(image, canonicalURL)} />
 
-		<Font cssVariable="--font-helvetica-neue" preload />
-		<Font cssVariable="--font-azeret-mono" preload />
+		<!--
+			`preload` is a filter, not a boolean. Passing `true` preloads all 16
+			registered Helvetica variants (~6.5 MB) on every page load, so only the
+			three weights this design actually uses are preloaded.
+		-->
+		<Font
+			cssVariable="--font-helvetica-neue"
+			preload={[
+				{ weight: 400, style: "normal" },
+				{ weight: 500, style: "normal" },
+				{ weight: 700, style: "normal" },
+			]}
+		/>
+		<Font
+			cssVariable="--font-azeret-mono"
+			preload={[
+				{ weight: 400, style: "normal" },
+				{ weight: 700, style: "normal" },
+			]}
+		/>
 
 		<script
 			async
@@ -51,315 +88,380 @@ const { title, description = "JeremiahJason - Just a guy enjoying life" } =
 			window.plausible.init();
 		</script>
 
+		<script
+			type="application/ld+json"
+			set:html={JSON.stringify(personJsonLd(canonicalURL))}
+		/>
+
 		<title>{title}</title>
 	</head>
-	<body class="relative font-sans">
-		<nav
-			class="fixed bottom-0 w-full flex justify-center pb-4 md:pb-6 px-4 z-50 pointer-events-none"
-			id="navbar"
-			data-dark="0"
+	<body class="font-sans bg-accent">
+		<!--
+			Left PANEL
+
+			`z-30` keeps the panel above the accent "frame" below, whose 100vmax shadow paints over the whole left half — at `z-10` the panel was
+			seamlessly covered by it, which is exactly why the old flat rectangle
+			looked like bare background. The header is one step higher so the
+			monogram still sits on top of it.
+		-->
+		<div
+			class="rounded-lg h-full md:w-1/2 md:fixed top-0 left-0 p-1.5 pr-0.75 z-30 hidden md:block"
+		>
+			<FeaturePieces />
+		</div>
+
+		<!-- HEADER NON MOBILE -->
+		<header
+			class="fixed top-0 left-0 w-screen h-max z-40 p-1.5 pb-0 justify-between bg-transparent pointer-events-none hidden md:flex"
+		>
+			<a
+				href="/"
+				class="pointer-events-auto font-mono font-bold tracking-tighter text-3xl transition-[scale] hover:scale-90 duration-300 ease-in-out will-change-transform text-light h-max pl-4 pt-2"
+			>
+				<span class="h-min"
+					>JJ<span class="text-highlight text-4xl -ml-1">.</span></span
+				>
+			</a>
+			<div
+				class="pt-2 lg:pt-4 pr-2 lg:pr-4 flex flex-row h-max gap-1 lg:gap-2"
+			>
+				<HeaderNavBarLink link="/"> HOME </HeaderNavBarLink>
+				<HeaderNavBarLink link="/works"> WORKS </HeaderNavBarLink>
+				<HeaderNavBarLink link="/profile"> PROFILE </HeaderNavBarLink>
+				<HeaderNavBarLink link="/entries"> ENTRIES </HeaderNavBarLink>
+				<!-- <HeaderNavBarLink link="/"> CONTACT </HeaderNavBarLink> -->
+			</div>
+		</header>
+
+		<!-- HEADER MOBILE -->
+		<header
+			class="h-(--mobile-header-height) fixed top-0 left-0 w-full z-30 p-1.5 pb-0 bg-accent md:hidden"
 		>
 			<div
-				class="w-full md:w-1/6 md:min-w-[550px] h-[70px] md:h-[80px] max-h-max rounded-lg bg-dark/8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-[20px] border border-light/20 px-4 tracking-wider font-light flex flex-col-reverse overflow-hidden pointer-events-auto"
-				id="blur-box"
+				class="w-full h-full bg-light rounded-xl flex flex-row justify-between items-center px-4"
 			>
-				<div
-					class="w-full h-[70px] md:h-[80px] flex items-center justify-between py-4 shrink-0 relative"
+				<a
+					href="/"
+					class="pointer-events-auto font-mono font-bold tracking-tighter text-3xl transition-[scale] hover:scale-90 duration-300 ease-in-out will-change-transform text-accent h-min pt-1"
 				>
-					<div class="h-full flex items-center gap-2">
-						<button
-							class="h-full w-16 md:w-24 font-normal text-sm md:text-lg bg-light rounded cursor-pointer flex items-center justify-center transition-all duration-300 ease-in-out hover:scale-95 hover:bg-accent hover:text-light"
-							id="menu-button-text"
-						>
-							<p class="pt-1">MENU</p>
-						</button>
-						<button
-							class="h-full font-normal text-base md:text-2xl bg-light px-4 rounded cursor-pointer transition-all duration-300 ease-in-out hover:scale-95 hover:bg-accent hover:text-light"
-							id="menu-button-plus"
-						>
-							<p>+</p>
-						</button>
-					</div>
-					<button
-						id="contact-button"
-						class="h-full w-24 md:w-32 font-normal text-sm md:text-lg bg-highlight rounded cursor-pointer flex items-center justify-center text-light"
+					<span class="h-min"
+						>JJ<span class="text-highlight text-4xl -ml-1 h-min leading-2"
+							>.</span
+						></span
 					>
-						<p class="pt-1">CONTACT</p>
-					</button>
+				</a>
 
-					<div
-						class="w-full absolute bottom-0 h-[70px] md:h-[80px] flex items-center justify-center pointer-events-none"
+				<div class="relative" id="menu-wrapper">
+					<button
+						id="menu-open"
+						type="button"
+						aria-expanded="false"
+						aria-controls="menu-container"
+						class="transform-gpu backface-hidden font-semibold tracking-widest text-xs bg-accent text-light px-3.5 pb-1.5 pt-2.5 rounded-full h-max hover:scale-90 will-change-transform transition-all duration-300 ease-in-out relative focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
 					>
+						<span class="z-10"> MENU </span>
+					</button>
+					<nav
+						id="menu-container"
+						aria-label="Mobile navigation"
+						aria-hidden="true"
+						inert
+						style="opacity: 0;"
+						class="pointer-events-none absolute w-44 h-max bg-accent -top-1.5 -right-1.5 z-50 p-1.5 rounded-2xl flex flex-col"
+					>
+						<div class="w-full flex justify-end">
+							<button
+								id="menu-close"
+								type="button"
+								class="transform-gpu backface-hidden font-semibold tracking-wider text-xs bg-light text-accent px-3.5 pb-1.5 pt-2.5 rounded-full h-max hover:scale-90 will-change-transform transition-all duration-300 ease-in-out relative focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light"
+							>
+								CLOSE
+							</button>
+						</div>
+
+						<div
+							class="px-6 pb-8 mt-8 flex flex-col items-center text-light font-semibold tracking-widest gap-6"
+						>
+							<a class="menu-link" href="/">HOME</a>
+							<a class="menu-link" href="/works">WORKS</a>
+							<a class="menu-link" href="/profile">PROFILE</a>
+							<a class="menu-link" href="/entries">ENTRIES</a>
+						</div>
+					</nav>
+				</div>
+			</div>
+		</header>
+		<!-- FRAME -->
+		<div
+			class="w-full md:w-1/2 h-[calc(100dvh-64px)] md:h-dvh p-1.5 fixed bottom-0 right-0 z-20 overflow-hidden pointer-events-none"
+		>
+			<div
+				class="w-full h-full rounded-xl shadow-[0_0_0_100vmax] shadow-accent"
+			>
+			</div>
+		</div>
+
+		<!--
+			Content
+
+			Deliberately a plain scrolling document. The page used to wrap this in
+			GSAP's ScrollSmoother, which fixes the wrapper, interpolates the content
+			transform on the main thread and reserves the document height on `<body>`.
+			That cost more than it bought: see the note above the script block.
+		-->
+		<main class="relative">
+			<!-- MOBILE HEADER SPACER -->
+			<div
+				class="h-(--mobile-header-height) block w-full md:hidden shrink-0"
+			>
+			</div>
+			<div class="flex">
+				<div class="w-full md:w-1/2 hidden md:block">
+				</div>
+				<div class="w-full md:w-1/2">
+					<slot />
+				</div>
+			</div>
+
+			<div class="flex">
+				<div class="w-full md:w-1/2 hidden md:block">
+				</div>
+
+				<footer class="px-12 pt-24 pb-16 w-full md:w-1/2">
+					<div class="w-full flex flex-col items-center gap-4">
 						<a
 							href="/"
-							id="jj-logo"
-							class="pointer-events-auto font-mono font-bold tracking-tighter text-xl md:text-3xl transition-[scale] hover:scale-90 duration-300 ease-in-out will-change-transform text-dark/80"
+							class="pointer-events-auto font-mono font-bold tracking-tighter text-7xl transition-[scale] hover:scale-90 duration-300 ease-in-out will-change-transform text-light h-min pt-1"
 						>
-							<span
+							<span class="h-min"
 								>JJ<span
-									class="text-highlight text-2xl md:text-4xl -ml-1"
+									class="text-highlight text-6xl -ml-1 h-min leading-2"
 									>.</span
 								></span
 							>
 						</a>
-					</div>
-				</div>
-				<div
-					id="nav-link"
-					class="w-full grow py-12 md:py-24 flex flex-col gap-6 md:gap-10"
-				>
-					<NavBarLink link="/">home</NavBarLink>
-					<NavBarLink link="#section-work">works</NavBarLink>
-					<!-- <NavBarLink link="/">pricing</NavBarLink> -->
-					<NavBarLink link="#about-section" offset={-600}>about</NavBarLink
-					>
-				</div>
-				<!-- <span class="text-4xl font-bold">JJ</span> -->
-			</div>
-		</nav>
-		<!-- <SplashScreen /> -->
-		<div id="smooth-wrapper">
-			<main
-				id="smooth-content"
-				class="will-change-transform backface-hidden"
-			>
-				<slot />
-				<footer
-					class="w-full pt-8 bg-light px-4 md:px-14 pb-24 md:pb-6 flex flex-col-reverse text-dark/80 border-t border-dark/10"
-				>
-					<div class="flex justify-between w-full">
-						<p>© 2026</p>
-						<p>JeremiahJason.com</p>
-					</div>
-					<div class="h-[20px] md:h-[80px]"></div>
-					<div class="w-full px-8">
-						<SocialNavLinks />
+						<div
+							class="flex flex-row items-center justify-center gap-6 font-bold tracking-wider text-2xl text-light mt-4 flex-wrap"
+						>
+							<a class="hover:underline" href="/">HOME</a>
+							<a class="hover:underline" href="/works">WORKS</a>
+							<a class="hover:underline" href="/profile">PROFILE</a>
+							<a class="hover:underline" href="/entries">ENTRIES</a>
+						</div>
+
+						<div
+							class="flex flex-row items-center justify-center gap-8 mt-3 flex-wrap"
+						>
+							{
+								socials.map((social) => (
+									<a
+										href={social.href}
+										target={social.external ? "_blank" : undefined}
+										rel={social.external ? "noopener noreferrer" : undefined}
+										class="group text-light font-normal text-base relative leading-3 hover:underline inline-flex items-center"
+									>
+										{social.label}
+										{!social.external && (
+											<svg
+												class="absolute -right-3.5 bottom-0"
+												xmlns="http://www.w3.org/2000/svg"
+												width="12"
+												height="12"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<path d="M13 5H19V11" />
+												<path d="M19 5L5 19" />
+											</svg>
+										)}
+									</a>
+								))
+							}
+						</div>
+
+						<p class="text-xs text-light mt-8">
+							© {new Date().getFullYear()} - Jeremiah Jason
+						</p>
 					</div>
 				</footer>
-			</main>
-		</div>
+			</div>
+		</main>
 	</body>
 </html>
 
 <script>
 	import { gsap } from "gsap";
 
-	import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
-	import { ScrollSmoother } from "gsap/ScrollSmoother";
-	import { ScrollTrigger } from "gsap/ScrollTrigger";
+	const prefersReducedMotion = window.matchMedia(
+		"(prefers-reduced-motion: reduce)"
+	).matches;
 
-	gsap.registerPlugin(ScrambleTextPlugin);
-	gsap.registerPlugin(ScrollSmoother, ScrollTrigger);
+	/* ------------------------------------------------------------------ *
+	 * Mobile menu: disclosure pattern with focus management.
+	 *
+	 * The panel is `inert` + `aria-hidden` while closed, so it is out of the
+	 * tab order and the accessibility tree, and focus is moved into it (then
+	 * returned to the toggle) so keyboard users are never stranded behind an
+	 * invisible overlay.
+	 *
+	 * The tween animates `opacity`, never `visibility`: a `visibility: hidden`
+	 * element cannot take focus, and Chromium keeps reporting the stale value
+	 * for a frame after the class that hid it is removed.
+	 * ------------------------------------------------------------------ */
+	const wrapper = document.querySelector<HTMLElement>("#menu-wrapper");
+	const container = document.querySelector<HTMLElement>("#menu-container");
+	const openBtn = document.querySelector<HTMLButtonElement>("#menu-open");
+	const closeBtn = document.querySelector<HTMLButtonElement>("#menu-close");
 
-	const mm = gsap.matchMedia();
+	if (wrapper && container && openBtn && closeBtn) {
+		const links = Array.from(
+			container.querySelectorAll<HTMLAnchorElement>(".menu-link")
+		);
+		/** First and last focusable node, for the Tab wrap inside the menu. */
+		const focusables = [closeBtn, ...links];
 
-	function initNavbar() {
-		const navbar = document.getElementById("navbar");
-		const blurBox = document.getElementById("blur-box");
-		const menuButtonText = document.getElementById("menu-button-text");
-		const menuButtonPlus = document.getElementById("menu-button-plus");
-
-		const contactButton = document.getElementById("contact-button");
-
-		if (
-			!blurBox ||
-			!menuButtonPlus ||
-			!menuButtonText ||
-			!contactButton ||
-			!navbar
-		)
-			return;
-
-		// blurBox.classList.add("h-[80px]");
-		blurBox.dataset.isOpen = "0";
-		gsap.set("#nav-link button", { opacity: 0, y: -20 });
-
-		function animateNavbarContent() {
-			if (!blurBox) return;
-			const isOpen = blurBox.dataset.isOpen === "1";
-			let tl = gsap.timeline();
-			if (isOpen) {
-				blurBox.dataset.isOpen = "0";
-				mm.add(
-					{
-						isMobile: "(max-width: 767.98px)", // < md
-						isTablet: "(min-width: 768px) and (max-width: 1023.98px)", // md → lg
-						isDesktop: "(min-width: 1024px)", // lg+
-					},
-					(context) => {
-						const { isMobile, isTablet, isDesktop } =
-							context.conditions ?? {};
-
-						tl.to(blurBox, { backdropFilter: "blur(20px)", duration: 1 })
-							.to(
-								"#nav-link button",
-								{ opacity: 0, y: -20, stagger: 0.1 },
-								"<"
-							)
-							.to(
-								blurBox,
-								{
-									height: isMobile ? "70px" : "80px",
-									ease: "power3.out",
-									duration: 1,
-								},
-								"<0.3"
-							);
-					}
-				);
-			} else {
-				blurBox.dataset.isOpen = "1";
-				tl.to(blurBox, {
-					height: "650px",
-					duration: 1.3,
-					ease: "power3.out",
-				})
-					.to(
-						blurBox,
-						{ backdropFilter: "blur(60px)", duration: 1 },
-						"<0.3"
-					)
-					.to(
-						"#nav-link button",
-						{ opacity: 1, y: 0, stagger: -0.1 },
-						"<"
-					);
-			}
-		}
-
-		function animateMenuButton() {
-			if (!blurBox) return;
-			const isOpen = blurBox.dataset.isOpen === "1";
-
-			if (isOpen) {
-				gsap.to("#menu-button-text p", {
-					scrambleText: {
-						text: "MENU",
-						chars: "upperAndLowerCase",
-					},
-					duration: 0.5,
-				});
-				gsap.to("#menu-button-plus p", {
-					rotate: 0,
-					ease: "power4.inOut",
-					duration: 0.5,
-				});
-			} else {
-				gsap.to("#menu-button-text p", {
-					scrambleText: {
-						text: "CLOSE",
-						chars: "upperAndLowerCase",
-					},
-					duration: 0.5,
-				});
-				gsap.to("#menu-button-plus p", {
-					rotate: 135,
-					ease: "power4.inOut",
-					duration: 0.5,
-				});
-			}
-		}
-
-		menuButtonText.addEventListener("click", () => {
-			animateMenuButton();
-			animateNavbarContent();
+		gsap.set(container, {
+			scale: 0.1,
+			opacity: 0,
+			transformOrigin: "100% 0%",
+			force3D: true,
 		});
-		menuButtonPlus.addEventListener("click", () => {
-			animateMenuButton();
-			animateNavbarContent();
-		});
+		gsap.set(links, { opacity: 0, y: 8 });
 
-		contactButton.addEventListener("mouseenter", () => {
-			gsap.to("#contact-button p", {
-				// scale: 1,
-				scrambleText: {
-					text: "CONTACT",
-				},
-				duration: 0.5,
-			});
-		});
+		let isOpen = false;
 
-		contactButton.addEventListener("mouseleave", () => {
-			gsap.to("#contact-button p", {
-				// scale: 1,
-				scrambleText: {
-					text: "CONTACT",
-				},
-				duration: 0.5,
-			});
-		});
-
-		contactButton.addEventListener("click", async () => {
-			gsap.to(window, {
-				duration: 1,
-				scrollTo: {
-					y: "#contact-section",
-				},
-				ease: "power2.out",
-			});
-		});
-
-		document.addEventListener("click", (event) => {
-			if (blurBox.dataset.isOpen === "0") return;
-
-			const clickedTarget = event.target as HTMLElement;
-
-			const navlinks = document.getElementById("nav-link");
-
-			if (
-				!blurBox.contains(clickedTarget) ||
-				navlinks?.contains(clickedTarget) ||
-				contactButton.contains(clickedTarget)
-			) {
-				animateMenuButton();
-				animateNavbarContent();
-			}
-		});
-
-		const callback = (mutationsList: any) => {
-			for (const mutation of mutationsList) {
-				if (
-					mutation.type === "attributes" &&
-					mutation.attributeName === "data-dark"
-				) {
-					const isDark = navbar.getAttribute("data-dark") === "1";
-					if (isDark) {
-						gsap.to("#jj-logo", {
-							color: "var(--color-light)",
-							duration: 0.5,
-						});
-						gsap.to("#nav-link button", {
-							color: "var(--color-light)",
-							duration: 0.5,
-						});
-					} else {
-						gsap.to("#jj-logo", {
-							color: "color-mix(in oklab, #0b0b0b 80%, transparent)",
-							duration: 0.5,
-						});
-						gsap.to("#nav-link button", {
-							color: "color-mix(in oklab, #0b0b0b 80%, transparent)",
-							duration: 0.5,
-						});
-					}
-				}
-			}
+		const setOpenState = (open: boolean): void => {
+			container.setAttribute("aria-hidden", String(!open));
+			openBtn.setAttribute("aria-expanded", String(open));
+			// `inert` removes the panel from the tab order and the a11y tree.
+			container.inert = !open;
+			container.classList.toggle("pointer-events-none", !open);
 		};
 
-		// 3. Create the observer instance
-		const observer = new MutationObserver(callback);
+		const openMenu = (): void => {
+			if (isOpen) return;
+			isOpen = true;
+			setOpenState(true);
 
-		// 4. Start observing the target element for attribute changes
-		observer.observe(navbar, {
-			attributes: true, // Watch for attribute changes
-			attributeFilter: ["data-dark"], // Only watch this specific attribute
+			if (prefersReducedMotion) {
+				gsap.set(container, { scale: 1, opacity: 1 });
+				gsap.set(links, { opacity: 1, y: 0 });
+			} else {
+				gsap.to(container, {
+					scale: 1,
+					opacity: 1,
+					duration: 0.3,
+					ease: "power3.out",
+					force3D: true,
+					overwrite: true,
+				});
+				gsap.to(links, {
+					opacity: 1,
+					y: 0,
+					duration: 0.25,
+					stagger: 0.03,
+					delay: 0.1,
+					ease: "power2.out",
+					overwrite: true,
+				});
+			}
+
+			closeBtn.focus();
+		};
+
+		const closeMenu = ({ restoreFocus = true } = {}): void => {
+			if (!isOpen) return;
+			isOpen = false;
+			setOpenState(false);
+			openBtn.setAttribute("aria-expanded", "false");
+
+			const finish = (): void => {
+				gsap.set(links, { opacity: 0, y: 8 });
+			};
+
+			if (prefersReducedMotion) {
+				gsap.set(container, { scale: 0.1, opacity: 0 });
+				finish();
+			} else {
+				gsap.to(container, {
+					scale: 0.1,
+					opacity: 0,
+					duration: 0.2,
+					ease: "power2.in",
+					force3D: true,
+					overwrite: true,
+					onComplete: finish,
+				});
+			}
+
+			if (restoreFocus) openBtn.focus();
+		};
+
+		openBtn.addEventListener("click", openMenu);
+		closeBtn.addEventListener("click", () => closeMenu());
+
+		// Leaving the page through a menu link must not steal focus back.
+		for (const link of links) {
+			link.addEventListener("click", () => closeMenu({ restoreFocus: false }));
+		}
+
+		document.addEventListener("click", (event) => {
+			if (isOpen && !wrapper.contains(event.target as Node)) closeMenu();
 		});
-	}
-	initNavbar();
 
-	ScrollSmoother.create({
-		smooth: 1,
-		normalizeScroll: true,
-		effects: true,
-	});
+		document.addEventListener("keydown", (event) => {
+			if (!isOpen) return;
+
+			if (event.key === "Escape") {
+				closeMenu();
+				return;
+			}
+
+			if (event.key !== "Tab") return;
+
+			// Wrap focus inside the open panel.
+			const first = focusables[0];
+			const last = focusables[focusables.length - 1];
+
+			if (event.shiftKey && document.activeElement === first) {
+				event.preventDefault();
+				last.focus();
+			} else if (!event.shiftKey && document.activeElement === last) {
+				event.preventDefault();
+				first.focus();
+			}
+		});
+
+		setOpenState(false);
+	}
+
+	/*
+	 * No ScrollSmoother.
+	 *
+	 * This layout used to hand the page to GSAP's ScrollSmoother on fine
+	 * pointers. Measured on this page (1440x900, DPR 2), it cost:
+	 *
+	 * - Input lag. The content is translated towards the native scroll position
+	 *   instead of moving with it: a 400 px wheel step left it 400 px behind and
+	 *   took ~580 ms to settle inside 1 px, so every scroll trails the input.
+	 * - A second document-sized raster surface. `will-change-transform` on the
+	 *   content (plus the fixed wrapper ScrollSmoother installs) made Chrome
+	 *   allocate 1440x3374 CSS px twice — ~148 MB of surfaces for a 3 374 px
+	 *   page, rastered eagerly rather than tiled on demand. On hardware
+	 *   compositing that is invisible; with GPU raster disabled the same scroll
+	 *   dropped 53 % of frames.
+	 * - A `body` height it owns. The document height is measured once and
+	 *   written inline, so content that grows later needs a manual refresh.
+	 *
+	 * Nothing replaced it: the smoother was created with `effects: false` and no
+	 * page pins anything, so the only thing it did was smooth the wheel. Native
+	 * scrolling is compositor-driven, lags by zero, and keeps one tiled layer.
+	 * Scroll-driven reveals still work — `ScrollTrigger` observes native scroll
+	 * on its own (see `/profile`).
+	 */
 </script>

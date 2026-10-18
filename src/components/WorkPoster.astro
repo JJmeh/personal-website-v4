@@ -1,0 +1,59 @@
+---
+import type { Work } from "../data/works";
+
+/**
+ * The generated poster tile for a work that has no screenshot (a private
+ * build, or one that has not been captured yet).
+ *
+ * Shared by the card grid and the case-study header so the monogram treatment
+ * exists once — the card used to carry the only copy of this markup.
+ */
+interface Props {
+	work: Work;
+	/** Container overrides (height/aspect) for the host layout. */
+	class?: string;
+}
+
+const { work, class: className } = Astro.props;
+
+const toneClasses: Record<Work["poster"]["tone"], string> = {
+	accent: "bg-accent text-light",
+	dark: "bg-dark text-light",
+	highlight: "bg-highlight text-dark",
+	frame: "bg-frame text-dark",
+};
+---
+
+<div
+	class:list={[
+		"w-full h-full relative flex items-center justify-center",
+		toneClasses[work.poster.tone],
+		className,
+	]}
+	aria-hidden="true"
+>
+	<svg class="absolute inset-0 w-full h-full opacity-20">
+		<defs>
+			<pattern
+				id={`work-poster-dots-${work.slug}`}
+				width="16"
+				height="16"
+				patternUnits="userSpaceOnUse"
+			>
+				<circle cx="1.5" cy="1.5" r="1.5" fill="currentColor" />
+			</pattern>
+		</defs>
+		<rect
+			width="100%"
+			height="100%"
+			fill={`url(#work-poster-dots-${work.slug})`}
+		/>
+	</svg>
+
+	<span
+		class="relative font-mono font-bold text-5xl sm:text-6xl xl:text-7xl tracking-tighter transition-transform duration-500 ease-in-out group-hover:scale-[1.04]"
+	>
+		{work.poster.monogram}
+		<span class="opacity-50">.</span>
+	</span>
+</div>

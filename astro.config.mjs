@@ -1,147 +1,84 @@
 // @ts-check
-import { defineConfig, fontProviders } from "astro/config";
+import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
+import { defineConfig, fontProviders } from "astro/config";
+
+/**
+ * Helvetica Neue ships as woff2, not otf: the three cuts the design uses are
+ * 482 KB as woff2 against 1.4 MB as otf, and two of them are preloaded on
+ * every page (870 KB → 288 KB). Convert a new cut with `fontTools`:
+ *
+ *     python3 -c "from fontTools.ttLib import TTFont; f = TTFont('In.otf'); f.flavor = 'woff2'; f.save('In.woff2')"
+ *
+ * No subsetting — the full charset is kept, so nothing the copy uses (em dash,
+ * ×, curly quotes) falls back to a system font.
+ */
+/** @param {string} file */
+const font = (file) => `./src/assets/fonts/helvetica-neue/${file}.woff2`;
 
 // https://astro.build/config
 export default defineConfig({
+	site: "https://jeremiahjason.com",
+
+	image: {
+		layout: "constrained",
+		responsiveStyles: true,
+	},
+
+	// `/experiments` is a scratch space for visual tests, not content.
+	integrations: [sitemap({ filter: (page) => !page.includes("/experiments") })],
+
 	vite: {
 		plugins: [tailwindcss()],
 	},
 
+	/**
+	 * Only the weights the design actually uses are registered.
+	 *
+	 * Helvetica Neue has no true 600, so `font-semibold` (600) reuses the Bold
+	 * cut — that is the weight the browser already fell back to when 600 was
+	 * missing entirely. Point it at `HelveticaNeueMedium.woff2` instead if
+	 * `font-semibold` should read lighter than `font-bold`.
+	 *
+	 * The other 12 cuts (thin → black, plus every italic) are not used
+	 * anywhere, so registering them only shipped dead files.
+	 */
 	fonts: [
 		{
 			provider: fontProviders.fontsource(),
 			name: "Azeret Mono",
 			cssVariable: "--font-azeret-mono",
-			weights: [100, 200, 300, 400, 500, 600, 700],
-			display: "optional",
+			weights: [400, 500, 700],
+			styles: ["normal"],
+			display: "swap",
 		},
 		{
 			provider: fontProviders.local(),
 			name: "HelveticaNeue",
 			cssVariable: "--font-helvetica-neue",
-			display: "optional",
+			display: "swap",
 			options: {
 				variants: [
-					// Thin (100)
 					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueThin.otf",
-						],
-						weight: 100,
-						style: "normal",
-					},
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueThinItalic.otf",
-						],
-						weight: 100,
-						style: "italic",
-					},
-					// UltraLight (200)
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueUltraLight.otf",
-						],
-						weight: 200,
-						style: "normal",
-					},
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueUltraLightItalic.otf",
-						],
-						weight: 200,
-						style: "italic",
-					},
-					// Light (300)
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueLight.otf",
-						],
-						weight: 300,
-						style: "normal",
-					},
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueLightItalic.otf",
-						],
-						weight: 300,
-						style: "italic",
-					},
-					// Regular (400)
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueRoman.otf",
-						],
+						src: [font("HelveticaNeueRoman")],
 						weight: 400,
 						style: "normal",
 					},
 					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueItalic.ttf",
-						],
-						weight: 400,
-						style: "italic",
-					},
-					// Medium (500)
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueMedium.otf",
-						],
+						src: [font("HelveticaNeueMedium")],
 						weight: 500,
 						style: "normal",
 					},
+					// No true semibold exists in the family.
 					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueMediumItalic.otf",
-						],
-						weight: 500,
-						style: "italic",
+						src: [font("HelveticaNeueBold")],
+						weight: 600,
+						style: "normal",
 					},
-					// Bold (700)
 					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueBold.otf",
-						],
+						src: [font("HelveticaNeueBold")],
 						weight: 700,
 						style: "normal",
-					},
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueBoldItalic.otf",
-						],
-						weight: 700,
-						style: "italic",
-					},
-					// Heavy (800)
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueHeavy.otf",
-						],
-						weight: 800,
-						style: "normal",
-					},
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueHeavyItalic.otf",
-						],
-						weight: 800,
-						style: "italic",
-					},
-					// Black (900)
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueBlack.otf",
-						],
-						weight: 900,
-						style: "normal",
-					},
-					{
-						src: [
-							"./src/assets/fonts/helvetica-neue/HelveticaNeueBlackItalic.otf",
-						],
-						weight: 900,
-						style: "italic",
 					},
 				],
 			},

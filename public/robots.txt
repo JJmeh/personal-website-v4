@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# /experiments is a scratch space for visual tests, not content.
+Disallow: /experiments
+
+Sitemap: https://jeremiahjason.com/sitemap-index.xml

@@ -1,0 +1,48 @@
+---
+/**
+ * The pill button, in one place.
+ *
+ * Before this existed the same 6-class string was pasted into 8 different
+ * spots across the home page, /works, /entries, /profile and /404, so a tweak
+ * to the hover style meant hunting them all down.
+ */
+interface Props {
+	href: string;
+	/** Solid accent pill (default) or the small light chip used on dark panels. */
+	variant?: "primary" | "chip";
+	size?: "sm" | "md" | "lg";
+	target?: "_blank";
+	/** Set for a <button>-style control rendered as a link. */
+	rel?: string;
+}
+
+const { href, variant = "primary", size = "md", target, rel } = Astro.props;
+
+const sizes = {
+	sm: "px-4 pb-1 pt-2 text-base",
+	md: "px-6 pb-1 pt-2 text-base",
+	lg: "px-8 pb-2 pt-3 text-lg",
+} as const;
+
+const variants = {
+	primary:
+		"rounded-full bg-accent text-light border-4 border-accent font-semibold tracking-widest transition-colors duration-150 ease-in-out hover:bg-light hover:text-accent",
+	chip: "rounded-lg bg-light text-accent border-2 border-light transition-all duration-150 ease-in-out hover:bg-accent hover:text-light",
+} as const;
+
+const isExternal = href.startsWith("http") || href.startsWith("mailto:");
+---
+
+<a
+	{href}
+	target={target}
+	rel={target === "_blank" ? (rel ?? "noopener noreferrer") : rel}
+	class:list={[
+		"inline-block w-max text-center",
+		sizes[size],
+		variants[variant],
+		isExternal && "hover:underline",
+	]}
+>
+	<slot />
+</a>

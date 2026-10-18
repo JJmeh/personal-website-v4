@@ -1,0 +1,17 @@
+---
+import Breadcrumb from "../components/Breadcrumb.astro";
+import Button from "../components/Button.astro";
+import PageHero from "../components/PageHero.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="404 | Jeremiah Jason"
+	description="That page does not exist."
+>
+	<PageHero title="404." subtitle="This page drifted off into space.">
+		<Button href="/works" size="md">SEE THE WORKS</Button>
+	</PageHero>
+
+	<Breadcrumb current="404" />
+</BaseLayout>

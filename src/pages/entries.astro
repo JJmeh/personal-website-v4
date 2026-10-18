@@ -1,0 +1,153 @@
+---
+import Breadcrumb from "../components/Breadcrumb.astro";
+import CardFiller from "../components/CardFiller.astro";
+import EntryCard from "../components/EntryCard.astro";
+import PageHero from "../components/PageHero.astro";
+import { getEntryTagFilters, getPublishedEntries } from "../data/entries";
+import { toFacetAttr } from "../data/facets";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+/**
+ * Entries listing — driven by the `entries` content collection
+ * (`src/content/entries/*.md`). Nothing here needs touching to publish a post.
+ */
+const entries = await getPublishedEntries();
+
+/** Every tag that exists in the collection becomes a filter pill. */
+const filters = getEntryTagFilters(entries);
+const tagsBySlug = new Map(
+	entries.map((entry) => [entry.id, toFacetAttr(entry.data.tags)] as const)
+);
+
+/** The grid runs two-up from `lg`; an odd last card gets a decorative filler. */
+const hasOddCells = entries.length % 2 !== 0;
+---
+
+<BaseLayout
+	title="Entries | Jeremiah Jason"
+	description="Notes, announcements and updates from Jeremiah Jason."
+>
+	<PageHero title="ENTRIES" />
+
+	<section class="w-full p-1.5 pb-0 flex flex-col">
+		<button
+			type="button"
+			id="tags-toggle"
+			aria-expanded="false"
+			aria-controls="tags-panel"
+			class="w-full h-max bg-light rounded-xl py-4 px-4 sm:px-6 sm:py-4 xl:px-10 xl:py-6 flex items-center justify-between gap-3 group cursor-pointer"
+		>
+			<h2
+				class="font-bold text-dark text-lg sm:text-xl uppercase pt-1.5 tracking-wider group-hover:scale-90 transition-transform duration-300 ease-in-out"
+			>
+				All Entries
+			</h2>
+			<span class="flex items-center gap-2 shrink-0">
+				<span
+					class="font-mono uppercase tracking-wider text-[10px] text-dark/70 pt-1.5"
+				>
+					{entries.length} {entries.length === 1 ? "entry" : "entries"}
+				</span>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="24"
+					height="24"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					id="tags-chevron"
+					aria-hidden="true"
+					class="lucide lucide-chevron-down preview-icon text-dark transition-transform duration-300 ease-in-out rotate-0"
+					><path d="m6 9 6 6 6-6"></path></svg
+				>
+			</span>
+		</button>
+
+		<div
+			id="tags-panel"
+			class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-500 ease-in-out"
+			aria-hidden="true"
+			inert
+		>
+			<div class="overflow-hidden min-h-0">
+				<div
+					class="w-full bg-accent rounded-xl p-4 xl:p-6 flex flex-wrap gap-2"
+					role="group"
+					aria-label="Filter entries by tag"
+				>
+					{
+						filters.map((filter) => (
+							<button
+								type="button"
+								data-filter={filter}
+								aria-pressed="false"
+								class="tag-filter font-bold uppercase tracking-wider text-xs xl:text-sm px-3.5 pb-1.5 pt-2.5 rounded-full transition-colors duration-300 ease-in-out cursor-pointer bg-light/10 text-light hover:bg-light/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
+							>
+								{filter}
+							</button>
+						))
+					}
+				</div>
+			</div>
+		</div>
+
+		<p
+			id="entries-empty"
+			class:list={[
+				"w-full bg-light rounded-xl p-10 mt-1.5 text-center text-dark/70 font-medium",
+				entries.length > 0 && "hidden",
+			]}
+			role="status"
+		>
+			{
+				entries.length === 0
+					? "Nothing published yet — new entries land here first."
+					: "No entries with this tag yet."
+			}
+		</p>
+
+		{
+			entries.length > 0 && (
+				<div
+					id="entries-grid"
+					class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-1.5 mt-1.5"
+				>
+					{entries.map((entry) => (
+						<div
+							class="entry-item w-full"
+							data-facets={tagsBySlug.get(entry.id)}
+						>
+							<EntryCard entry={entry} />
+						</div>
+					))}
+
+					<CardFiller
+						id="entries-filler"
+						class="min-h-60"
+						isHidden={!hasOddCells}
+					/>
+				</div>
+			)
+		}
+	</section>
+
+	<Breadcrumb current="ENTRIES" />
+</BaseLayout>
+
+<script>
+	import { initFacetFilter } from "../scripts/facet-filter";
+
+	initFacetFilter({
+		toggle: "#tags-toggle",
+		panel: "#tags-panel",
+		chevron: "#tags-chevron",
+		grid: "#entries-grid",
+		empty: "#entries-empty",
+		item: ".entry-item",
+		pill: ".tag-filter",
+		filler: "#entries-filler",
+	});
+</script>
